@@ -1,21 +1,14 @@
 {
-  "name": "vue-i18n-extract",
-  "version": "1.1.1",
+  "name": "vue-i18n-scanner",
+  "version": "1.0.0",
   "description": "Manage vue-i18n localization with static analysis",
   "scripts": {
-    "build": "rm -fr dist && microbundle -f modern,umd",
-    "dev": "microbundle watch",
-    "demo": "node ./bin/vue-i18n-extract.js report -v './demo/vue-files/**/*.?(js|vue)' -l './demo/lang/**/*.?(json|js)'",
-    "test": "yarn build && jest",
-    "test:watch": "yarn build && jest --watch",
-    "lint": "eslint **/*.ts"
+    "test": "echo 'Not implemented'"
   },
   "license": "MIT",
   "source": "src/index.ts",
   "bin": "bin/vue-i18n-extract.js",
-  "main": "dist/vue-i18n-extract.umd.js",
-  "module": "dist/vue-i18n-extract.modern.js",
-  "types": "dist/index.d.ts",
+  "main": "bin/vue-i18n-extract.js",
   "repository": "https://github.com/pixari/vue-i18n-extract",
   "homepage": "https://github.com/pixari/vue-i18n-extract",
   "bugs": "https://github.com/pixari/vue-i18n-extract/issues",
@@ -38,21 +31,11 @@
     "js-yaml": "^3.13.1"
   },
   "devDependencies": {
-    "@types/dot-object": "^2.1.0",
-    "@types/esm": "^3.2.0",
-    "@types/glob": "^7.1.1",
-    "@types/is-valid-glob": "^1.0.0",
-    "@types/jest": "^25.2.1",
-    "@types/js-yaml": "^3.12.3",
-    "@types/yargs": "^15.0.4",
-    "@typescript-eslint/eslint-plugin": "^2.23.0",
-    "@typescript-eslint/parser": "^2.23.0",
-    "@yarnpkg/pnpify": "^2.0.0-rc.19",
-    "eslint": "^6.8.0",
-    "jest": "^25.1.0",
-    "jest-config": "^25.2.7",
-    "microbundle": "^0.12.0-next.8",
-    "ts-jest": "^25.2.1",
-    "typescript": "^3.8.3"
+    "eslint": "^7.6.0",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1"
   }
 }

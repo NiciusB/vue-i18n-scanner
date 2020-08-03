@@ -1,12 +1,19 @@
 module.exports = {
-  parser:  '@typescript-eslint/parser',
-  extends:  [
-    'plugin:@typescript-eslint/recommended',
+  env: {
+    es6: true,
+    node: true
+  },
+  extends: [
+    'standard'
   ],
- parserOptions:  {
-    ecmaVersion:  2020,
+  globals: {
+    Atomics: 'readonly',
+    SharedArrayBuffer: 'readonly'
+  },
+  parserOptions: {
+    ecmaVersion: 2018,
+    sourceType: 'module'
   },
   rules: {
-    '@typescript-eslint/camelcase': 0,
-  },
-};
+  }
+}
