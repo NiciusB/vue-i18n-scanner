@@ -1,8 +1,6 @@
-#!/usr/bin/env node
-
 'use strict'
-const program = require('commander')
-const { reportCommand } = require('../src/index.js')
+import program from 'commander'
+import { reportCommand } from '../src/index.js'
 
 program
   .command('report', { isDefault: true })
@@ -14,14 +12,6 @@ program
   .requiredOption(
     '-l, --languageFiles <languageFiles>',
     'The language file(s) you want to compare your Vue.js file(s) to. It can be a path to a folder or to a file. It accepts glob patterns (ex. *, ?, (pattern|pattern|pattern) '
-  )
-  .option(
-    '-o, --output <output>',
-    'Use if you want to create a json file out of your report. (ex. -o output.json)'
-  )
-  .option(
-    '-a, --add',
-    'Use if you want to add missing keys into your json language files.'
   )
   .action(reportCommand)
 

@@ -1,89 +1,70 @@
 import isValidGlob from 'is-valid-glob'
 import glob from 'glob'
+import chalk from 'chalk'
 import fs from 'fs'
+import path from 'path'
+import { PotExtractor } from './pot-extractor'
+import { getPoEntriesFromString } from './po'
 
-export function readVueFiles (src) {
+function readVueFiles (src) {
   if (!isValidGlob(src)) {
-    throw new Error('vueFiles isn\'t a valid glob pattern.')
+    throw new Error(`vueFiles isn't a valid glob pattern (${chalk.yellow(src)})`)
   }
 
-  const targetFiles = glob.sync(src)
+  const targetFiles = glob.sync(src, {
+    ignore: ['**/node_modules/**/*.*']
+  })
 
   if (targetFiles.length === 0) {
-    throw new Error('vueFiles glob has no files.')
+    throw new Error(`vueFiles glob (${chalk.yellow(src)}) has no files`)
   }
 
-  return targetFiles.map((f) => {
-    const fileName = f.replace(process.cwd(), '')
-    return { fileName, path: f, content: fs.readFileSync(f, 'utf8') }
+  return targetFiles.map((filePath) => {
+    const fileName = filePath.replace(process.cwd(), '')
+    const content = fs.readFileSync(filePath, 'UTF-8')
+    return { fileName, path: filePath, content }
   })
 }
 
-function * getMatches (file, regExp, captureGroup = 1) {
-  while (true) {
-    const match = regExp.exec(file.content)
-    if (match === null) {
-      break
-    }
-    const line = (file.content.substring(0, match.index).match(/\n/g) || []).length + 1
-    yield {
-      path: match[captureGroup],
-      line,
-      file: file.fileName
+function extractI18nItemsFromVueFiles (sourceFiles) {
+  const keywords = new Set()
+  keywords.add('$t')
+  keywords.add('vm.$t')
+  keywords.add('this.$t')
+  keywords.add('app.i18n.t')
+  keywords.add('$tc')
+  keywords.add('vm.$tc')
+  keywords.add('this.$tc')
+  keywords.add('app.i18n.tc')
+
+  const extractor = PotExtractor.create('domainName', {
+    tagNames: ['i18n'],
+    objectAttrs: { 'v-t': ['', 'path'] },
+    exprAttrs: [/^:/, /^v-bind:/, /^v-html$/],
+    markers: [{ start: '{{', end: '}}' }],
+    keywords: keywords
+  })
+
+  for (const file of sourceFiles) {
+    const ext = path.extname(file.path)
+    if (ext === '.vue') {
+      extractor.extractVue(file.path, file.content)
+    } else if (ext === '.js') {
+      extractor.extractJsModule(file.path, file.content)
+    } else {
+      console.warn(`skipping '${file.path}': unknown extension`)
     }
   }
-}
 
-/**
- * Extracts translation keys from methods such as `$t` and `$tc`.
- *
- * - **regexp pattern**: (?:[$ .]tc?)\(
- *
- *   **description**: Matches the sequence t( or tc(, optionally with either “$”, “.” or “ ” in front of it.
- *
- * - **regexp pattern**: (["'`])
- *
- *   **description**: 1. capturing group. Matches either “"”, “'”, or “`”.
- *
- * - **regexp pattern**: ((?:[^\\]|\\.)*?)
- *
- *   **description**: 2. capturing group. Matches anything except a backslash
- *   *or* matches any backslash followed by any character (e.g. “\"”, “\`”, “\t”, etc.)
- *
- * - **regexp pattern**: \1
- *
- *   **description**: matches whatever was matched by capturing group 1 (e.g. the starting string character)
- *
- * @param file a file object
- * @returns a list of translation keys found in `file`.
- */
-function extractMethodMatches (file) {
-  const methodRegExp = /(?:[$ .]tc?)\(\s*?(["'`])((?:[^\\]|\\.)*?)\1/g
-  return [...getMatches(file, methodRegExp, 2)]
-}
+  const entries = [...getPoEntriesFromString(extractor.toString())]
 
-function extractComponentMatches (file) {
-  const componentRegExp = /(?:<i18n|<I18N)(?:.|\n)*?(?:[^:]path=("|'))(.*?)\1/g
-  return [...getMatches(file, componentRegExp, 2)]
-}
-
-function extractDirectiveMatches (file) {
-  const directiveRegExp = /v-t="'(.*?)'"/g
-  return [...getMatches(file, directiveRegExp)]
-}
-
-function extractI18nItemsFromVueFiles (sourceFiles) {
-  return sourceFiles.reduce((accumulator, file) => {
-    const methodMatches = extractMethodMatches(file)
-    const componentMatches = extractComponentMatches(file)
-    const directiveMatches = extractDirectiveMatches(file)
-    return [
-      ...accumulator,
-      ...methodMatches,
-      ...componentMatches,
-      ...directiveMatches
-    ]
-  }, [])
+  return entries.map(entry => {
+    const path = entry.msgid
+    const reference = entry.comments.reference.split('\n')[0]
+    const file = reference.split(':')[0]
+    const line = parseInt(reference.split(':')[1])
+    return { path, line, file }
+  })
 }
 
 export function parseVueFiles (vueFilesPath) {
