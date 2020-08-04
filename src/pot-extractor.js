@@ -9,6 +9,7 @@ import { findPoEntry, PoEntryBuilder, setPoEntry } from './po'
 import * as gettextParser from 'gettext-parser'
 import * as ts from 'typescript'
 import Engine from 'php-parser'
+import chalk from 'chalk'
 
 function getBabelParserOptions (options) {
   options.plugins = [
@@ -92,7 +93,7 @@ export class PotExtractor {
       } else if (node.type === 'MemberExpression') {
         throw new Error('cannot extract translations from variable, use string literal directly')
       } else if (node.type === 'TemplateLiteral') {
-        throw new Error('cannot extract translations from template strings (`Example`), use string literal directly')
+        throw new Error('cannot extract translations from template strings, use string literal directly')
       } else if (node.type === 'BinaryExpression' && node.operator === '+') {
         const values = []
         for (const leftValue of this._evaluateJsArgumentValues(node.left)) {
@@ -146,7 +147,7 @@ export class PotExtractor {
               }
             } catch (err) {
               log.warn('extractJsNode', err.message)
-              log.warn('extractJsNode', `'${src.substring(node.start, node.end)}': (${node.loc.filename}:${node.loc.start.line})`)
+              warnCodeError('extractJsNode', src, node)
               console.log('') // separate with newline
             }
           }
@@ -167,7 +168,8 @@ export class PotExtractor {
             }
           } catch (err) {
             log.warn('extractJsIdentifierNode', err.message)
-            log.warn('extractJsIdentifierNode', `'${src.substring(node.start, node.end)}': (${node.loc.filename}:${node.loc.start.line})`)
+            warnCodeError('extractJsIdentifierNode', src, node)
+            console.log('') // separate with newline
           }
         }
       }
@@ -195,7 +197,8 @@ export class PotExtractor {
             for (const err of errs) {
               log.warn('extractJsObjectNode', err.message)
             }
-            log.warn('extractJsObjectNode', `'${src.substring(node.start, node.end)}': (${node.loc.filename}:${node.loc.start.line})`)
+            warnCodeError('extractJsObjectNode', src, node)
+            console.log('') // separate with newline
           }
         }
       }
@@ -720,4 +723,10 @@ export function getLineTo (src, index, startLine = 1) {
     return startLine
   }
   return startLine + matches.length
+}
+
+function warnCodeError (domain, src, node) {
+  const code = src.substring(node.start, node.end)
+  const path = `${node.loc.filename}:${node.loc.start.line}`
+  log.warn(domain, `'${chalk.yellow(code)}': (${chalk.blue(path)})`)
 }
