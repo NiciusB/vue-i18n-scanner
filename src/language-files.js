@@ -5,7 +5,7 @@ import yaml from 'js-yaml'
 import chalk from 'chalk'
 import { MISSING_TRANSLATION_VALUE } from './utils.js'
 
-export function writeMissingToLanguage (languageFolder, languageFormat, languageList, newMissingKeys) {
+export function writeMissingToLanguage (languageFolder, languageFormat, languageList, newMissingKeys, sort) {
   const parsedLanguageFiles = readLangFiles(languageFolder, languageList, languageFormat)
 
   languageList.forEach((language, index) => {
@@ -18,7 +18,8 @@ export function writeMissingToLanguage (languageFolder, languageFormat, language
       }
     })
 
-    const stringifiedContent = JSON.stringify(languageFile.content, null, 2)
+    const stringifyReplace = sort ? Object.keys(languageFile.content).sort() : null
+    const stringifiedContent = JSON.stringify(languageFile.content, stringifyReplace, 2)
 
     if (languageFormat === 'json') {
       fs.writeFileSync(langFilePath, stringifiedContent)
@@ -26,7 +27,7 @@ export function writeMissingToLanguage (languageFolder, languageFormat, language
       const jsFile = `export default ${stringifiedContent}; \n`
       fs.writeFileSync(langFilePath, jsFile)
     } else if (languageFormat === 'yaml' || languageFormat === 'yml') {
-      const yamlFile = yaml.safeDump(languageFile.content)
+      const yamlFile = yaml.safeDump(languageFile.content, { sortKeys: sort })
       fs.writeFileSync(langFilePath, yamlFile)
     }
   })

@@ -21,6 +21,14 @@ program
     '-L, --languageList <languageList>',
     'The list of languages you support, separated by comma. (ex. en,es,fr)'
   )
+  .option(
+    '-a, --shouldAddMissingKeys <shouldAddMissingKeys>',
+    'Automatically add missing keys to language files', true
+  )
+  .option(
+    '-s, --sort <sort>',
+    'Sort language files alphabetically', true
+  )
   .action(reportCommand)
 
 program.parseAsync(process.argv)
