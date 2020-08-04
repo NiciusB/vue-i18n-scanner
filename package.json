@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Manage vue-i18n localization with static analysis",
   "scripts": {
-    "test": "node bin/index.js -v './test/**/*.?(js|vue)' -l 'test/*.json'"
+    "test": "node bin/index.js -v 'test' -l 'test' -f json -L 'en,es'"
   },
   "license": "MIT",
   "source": "src/index.js",
@@ -14,14 +14,16 @@
   "bugs": "https://github.com/NiciusB/vue-i18n-scanner/issues",
   "keywords": [
     "javascript",
-    "typescript",
+    "i18n extract",
+    "i18n extractor",
+    "i18n",
     "vue i18n",
     "vue",
     "plugin",
     "internationalization",
     "internationalization-plugin"
   ],
-  "author": "NiciusB <nuno@balbona.me>. Partially based on vue-i18n-extract by Raffaele Pizzari <raffaele.pizzari@gmail.com> and l10n-tools by vonvon inc.",
+  "author": "NiciusB <nuno@balbona.me>. Partially based on vue-i18n-extract by Raffaele Pizzari, and l10n-tools by vonvon inc.",
   "dependencies": {
     "chalk": "^4.1.0",
     "commander": "^5.0.0",
@@ -30,28 +32,10 @@
     "js-yaml": "^3.13.1",
     "@babel/parser": "^7.5.5",
     "@babel/traverse": "^7.5.5",
-    "angular-gettext-tools": "^2.5.0",
     "cheerio": "^0.22.0",
-    "command-exists": "^1.2.8",
-    "find-root": "^1.1.0",
     "gettext-parser": "^4.0.1",
     "glob": "^7.1.4",
-    "glob-promise": "^3.4.0",
-    "glob-to-regexp": "^0.4.1",
-    "google-auth-library": "^5.2.0",
-    "googleapis": "^42.0.0",
-    "html-entities": "^1.2.1",
-    "http-shutdown": "^1.2.1",
-    "i18n-strings-files": "^1.0.4",
-    "jsonfile": "^5.0.0",
-    "npmlog": "^4.1.2",
-    "object-path": "^0.11.4",
-    "open": "^6.4.0",
-    "php-parser": "^3.0.0-prerelease.9",
-    "plist": "^3.0.1",
-    "shelljs": "^0.8.3",
-    "typescript": "^3.5.3",
-    "xml2js": "^0.4.22"
+    "npmlog": "^4.1.2"
   },
   "devDependencies": {
     "eslint": "^7.6.0",

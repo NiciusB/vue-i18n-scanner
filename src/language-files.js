@@ -1,38 +1,82 @@
 import path from 'path'
 import fs from 'fs'
-import glob from 'glob'
+import log from 'npmlog'
 import yaml from 'js-yaml'
-import isValidGlob from 'is-valid-glob'
 import chalk from 'chalk'
 import { MISSING_TRANSLATION_VALUE } from './utils.js'
 
-function readLangFiles (src) {
-  if (!isValidGlob(src)) {
-    throw new Error(`languageFiles isn't a valid glob pattern (${chalk.yellow(src)})`)
-  }
+export function writeMissingToLanguage (languageFolder, languageFormat, languageList, newMissingKeys) {
+  const parsedLanguageFiles = readLangFiles(languageFolder, languageList, languageFormat)
 
-  const targetFiles = glob.sync(src)
+  languageList.forEach((language, index) => {
+    const langFilePath = path.join(languageFolder, `${language}.${languageFormat}`)
+    const languageFile = parsedLanguageFiles[index]
 
-  if (targetFiles.length === 0) {
-    throw new Error(`languageFiles glob (${chalk.yellow(src)}) has no files`)
-  }
+    newMissingKeys.forEach(item => {
+      if (item.language === language) {
+        languageFile.content[item.path] = MISSING_TRANSLATION_VALUE
+      }
+    })
 
-  return targetFiles.map(filePath => {
-    const langPath = path.resolve(process.cwd(), filePath)
-    const langFileStr = fs.readFileSync(langPath, 'utf8')
+    const stringifiedContent = JSON.stringify(languageFile.content, null, 2)
 
-    const extension = langPath.substring(langPath.lastIndexOf('.')).toLowerCase()
-    const isYaml = extension === '.yaml' || extension === '.yml'
-
-    try {
-      var content = isYaml ? yaml.safeLoad(langFileStr) : JSON.parse(langFileStr)
-    } catch (err) {
-      throw new Error(`Language file ${chalk.yellow(filePath)} is corrupted: ${err.message}`)
+    if (languageFormat === 'json') {
+      fs.writeFileSync(langFilePath, stringifiedContent)
+    } else if (languageFormat === 'js') {
+      const jsFile = `export default ${stringifiedContent}; \n`
+      fs.writeFileSync(langFilePath, jsFile)
+    } else if (languageFormat === 'yaml' || languageFormat === 'yml') {
+      const yamlFile = yaml.safeDump(languageFile.content)
+      fs.writeFileSync(langFilePath, yamlFile)
     }
+  })
+}
 
-    const fileName = filePath.replace(process.cwd(), '')
+export function parseLanguageFiles (languageFolder, languageList, languageFormat) {
+  const parsedLanguageFiles = readLangFiles(languageFolder, languageList, languageFormat)
+  return extractI18nItemsFromLanguageFiles(parsedLanguageFiles)
+}
 
-    return { fileName, path: filePath, content }
+function readLangFiles (languageFolder, languageList, languageFormat) {
+  if (!fs.existsSync(languageFolder)) {
+    throw new Error(`languageFolder isn't a valid folder (${chalk.yellow(languageFolder)})`)
+  }
+
+  return languageList.map(language => {
+    const langFilePath = path.join(languageFolder, `${language}.${languageFormat}`)
+    let content
+
+    if (fs.existsSync(langFilePath)) {
+      try {
+        switch (languageFormat) {
+          case 'yaml':
+          case 'yml': {
+            const str = fs.readFileSync(langFilePath, 'utf8')
+            content = yaml.safeLoad(str)
+            break
+          }
+          case 'js': {
+            const file = require(langFilePath)
+            content = file ? file.default : undefined
+            break
+          }
+          case 'json': {
+            const str = fs.readFileSync(langFilePath, 'utf8')
+            content = JSON.parse(str)
+            break
+          }
+        }
+      } catch (err) {
+        throw new Error(`Language file ${chalk.yellow(langFilePath)} is corrupted: ${err.message}`)
+      }
+    } else {
+      log.warn('readLangFiles', `Creating language file for ${language}`)
+    }
+    if (!content) content = {}
+
+    const fileName = langFilePath.replace(process.cwd(), '')
+
+    return { fileName, path: langFilePath, content }
   })
 }
 
@@ -55,34 +99,4 @@ function extractI18nItemsFromLanguageFiles (languageFiles) {
   })
 
   return accumulator
-}
-
-export function writeMissingToLanguage (resolvedLanguageFiles, missingKeys) {
-  const languageFiles = readLangFiles(resolvedLanguageFiles)
-  languageFiles.forEach(languageFile => {
-    missingKeys.forEach(item => {
-      if ((item.language && languageFile.fileName.includes(item.language)) || !item.language) {
-        languageFile.content[item.path] = MISSING_TRANSLATION_VALUE
-      }
-    })
-
-    const fileExtension = languageFile.fileName.substring(languageFile.fileName.lastIndexOf('.') + 1)
-    const filePath = path.resolve(process.cwd() + languageFile.fileName)
-    const stringifiedContent = JSON.stringify(languageFile.content, null, 2)
-
-    if (fileExtension === 'json') {
-      fs.writeFileSync(filePath, stringifiedContent)
-    } else if (fileExtension === 'js') {
-      const jsFile = `export default ${stringifiedContent}; \n`
-      fs.writeFileSync(filePath, jsFile)
-    } else if (fileExtension === 'yaml' || fileExtension === 'yml') {
-      const yamlFile = yaml.safeDump(languageFile.content)
-      fs.writeFileSync(filePath, yamlFile)
-    }
-  })
-}
-
-export function parseLanguageFiles (languageFilesPath) {
-  const filesList = readLangFiles(languageFilesPath)
-  return extractI18nItemsFromLanguageFiles(filesList)
 }

@@ -7,8 +7,6 @@ import log from 'npmlog'
 import traverse from '@babel/traverse'
 import { findPoEntry, PoEntryBuilder, setPoEntry } from './po'
 import * as gettextParser from 'gettext-parser'
-import * as ts from 'typescript'
-import Engine from 'php-parser'
 import chalk from 'chalk'
 
 function getBabelParserOptions (options) {
@@ -379,8 +377,6 @@ export class PotExtractor {
   extractMarkerExpression (filename, src, marker, startLine = 1) {
     if (!marker.type || marker.type === 'js') {
       this.extractJsExpression(filename, src, startLine)
-    } else if (marker.type === 'angular') {
-      this.extractAngularExpression(filename, src, startLine)
     }
   }
 
@@ -423,217 +419,6 @@ export class PotExtractor {
     }
   }
 
-  extractAngularExpression (filename, src, startLine = 1) {
-    for (const filterExpr of this.filterExprs) {
-      const match = filterExpr.exec(src)
-      if (match == null) {
-        continue
-      }
-
-      const contentExpr = match[1]
-      try {
-        const node = babelParser.parseExpression(contentExpr, getBabelParserOptions({
-          sourceType: 'script',
-          sourceFilename: filename,
-          startLine: startLine
-        }))
-        try {
-          const ids = this._evaluateJsArgumentValues(node)
-          for (const id of ids) {
-            this.addMessage({ filename, line: node.loc.start.line }, id)
-          }
-        } catch (err) {
-          log.warn('extractAngularExpression', err.message)
-          log.warn('extractAngularExpression', `${src}: (${node.loc.filename}:${node.loc.start.line})`)
-        }
-      } catch (err) {
-        log.warn('extractAngularExpression', `cannot extract from '${src}' (${filename}:${startLine})`)
-      }
-    }
-  }
-
-  _evaluateTsArgumentValues (node) {
-    if (node.kind === ts.SyntaxKind.StringLiteral) {
-      return [node.text]
-    } else if (node.kind === ts.SyntaxKind.Identifier) {
-      throw new Error('cannot extract translations from variable, use string literal directly')
-    } else if (node.kind === ts.SyntaxKind.PropertyAccessExpression) {
-      throw new Error('cannot extract translations from variable, use string literal directly')
-    } else if (node.kind === ts.SyntaxKind.BinaryExpression && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
-      const values = []
-      for (const leftValue of this._evaluateTsArgumentValues(node.left)) {
-        for (const rightValue of this._evaluateTsArgumentValues(node.right)) {
-          values.push(leftValue + rightValue)
-        }
-      }
-      return values
-    } else if (node.kind === ts.SyntaxKind.ConditionalExpression) {
-      return this._evaluateTsArgumentValues(node.whenTrue)
-        .concat(this._evaluateTsArgumentValues(node.whenFalse))
-    } else {
-      throw new Error(`cannot extract translations from '${node.kind}' node, use string literal directly`)
-    }
-  }
-
-  extractTsNode (filename, src, ast, startLine = 1) {
-    const visit = node => {
-      if (node.kind === ts.SyntaxKind.CallExpression) {
-        const pos = findNonSpace(src, node.pos)
-        for (const { objectName, propName, position } of this.keywordDefs) {
-          if (objectName != null) {
-            if (node.expression.kind === ts.SyntaxKind.PropertyAccessExpression) {
-              const callee = node.expression.expression
-              if ((objectName === 'this' && callee.kind === ts.SyntaxKind.ThisKeyword) ||
-                                (callee.kind === ts.SyntaxKind.Identifier && callee.text === objectName)) {
-                const name = node.expression.name
-                if (name.kind === ts.SyntaxKind.Identifier && name.text === propName) {
-                  try {
-                    const ids = this._evaluateTsArgumentValues(node.arguments[position])
-                    for (const id of ids) {
-                      this.addMessage({ filename, line: getLineTo(src, pos, startLine) }, id)
-                    }
-                  } catch (err) {
-                    log.warn('extractTsNode', err.message)
-                    log.warn('extractTsNode', `'${src.substring(pos, node.end)}': (${filename}:${getLineTo(src, pos, startLine)})`)
-                  }
-                }
-              }
-            }
-          } else {
-            if (node.expression.kind === ts.SyntaxKind.Identifier) {
-              const callee = node.expression
-              if (callee.text === propName) {
-                try {
-                  const ids = this._evaluateTsArgumentValues(node.arguments[position])
-                  for (const id of ids) {
-                    this.addMessage({ filename, line: getLineTo(src, pos, startLine) }, id)
-                  }
-                } catch (err) {
-                  log.warn('extractTsNode', err.message)
-                  log.warn('extractTsNode', `'${src.substring(pos, node.end)}': (${filename}:${getLineTo(src, pos, startLine)})`)
-                }
-              }
-            }
-          }
-        }
-      }
-      ts.forEachChild(node, visit)
-    }
-    visit(ast)
-  }
-
-  extractTsModule (filename, src, startLine = 1) {
-    try {
-      const ast = ts.createSourceFile(filename, src, ts.ScriptTarget.Latest, true)
-      this.extractTsNode(filename, src, ast, startLine)
-    } catch (err) {
-      log.warn('extractJsModule', `error parsing '${src.split(/\n/g)[err.loc.line - 1].trim()}' (${filename}:${err.loc.line})`)
-    }
-  }
-
-  extractCocosAsset (filename, src) {
-    const objs = JSON.parse(src)
-    for (const obj of objs) {
-      if (!obj.hasOwnProperty('__type__')) {
-        return
-      }
-
-      const type = obj.__type__
-      if (this.options.cocosKeywords.hasOwnProperty(type)) {
-        const name = this.options.cocosKeywords[type]
-        const id = obj[name]
-        if (id) {
-          const path = getCocosNodePath(objs, obj)
-          this.addMessage({ filename, line: path }, id)
-        }
-      }
-    }
-  }
-
-  _evaluatePhpArgumentValues (node) {
-    if (node.kind === 'string') {
-      return [node.value]
-    } else if (node.kind === 'encapsed') {
-      throw new Error('cannot extract translations from interpolated string, use sprintf for formatting')
-    } else if (node.kind === 'variable') {
-      throw new Error('cannot extract translations from variable, use string literal directly')
-    } else if (node.kind === 'propertylookup') {
-      throw new Error('cannot extract translations from variable, use string literal directly')
-    } else if (node.kind === 'bin' && node.type === '+') {
-      const values = []
-      for (const leftValue of this._evaluatePhpArgumentValues(node.left)) {
-        for (const rightValue of this._evaluatePhpArgumentValues(node.right)) {
-          values.push(leftValue + rightValue)
-        }
-      }
-      return values
-    } else if (node.kind === 'retif') {
-      return this._evaluatePhpArgumentValues(node.trueExpr)
-        .concat(this._evaluatePhpArgumentValues(node.falseExpr))
-    } else {
-      throw new Error(`cannot extract translations from '${node.kind}' node, use string literal directly`)
-    }
-  }
-
-  extractPhpNode (filename, src, Node, ast, startLine = 1) {
-    const visit = node => {
-      if (node.kind === 'call') {
-        for (const { propName, position } of this.keywordDefs) {
-          if (node.what.kind === 'classreference') {
-            if (node.what.name === propName) {
-              const startOffset = src.substr(0, node.loc.start.offset).lastIndexOf(propName)
-              try {
-                const ids = this._evaluatePhpArgumentValues(node.arguments[position])
-                for (const id of ids) {
-                  this.addMessage({ filename, line: node.loc.start.line }, id)
-                }
-              } catch (err) {
-                log.warn('extractPhpNode', err.message)
-                log.warn('extractPhpNode', `'${src.substring(startOffset, node.loc.end.offset)}': (${filename}:${node.loc.start.line})`)
-              }
-            }
-          }
-        }
-      }
-
-      for (const key in node) {
-        // noinspection JSUnfilteredForInLoop
-        const value = node[key]
-        if (Array.isArray(value)) {
-          for (const child of value) {
-            if (child instanceof Node) {
-              visit(child)
-            }
-          }
-        } else if (value instanceof Node) {
-          visit(value)
-        }
-      }
-    }
-    visit(ast)
-  }
-
-  extractPhpCode (filename, src, startLine = 1) {
-    const parser = new Engine({
-      parser: {
-        extractDoc: true,
-        locations: true,
-        php7: true
-      },
-      ast: {
-        withPositions: true
-      }
-    })
-
-    try {
-      const ast = parser.parseCode(src)
-      const Node = require('php-parser/src/ast/node')
-      this.extractPhpNode(filename, src, Node, ast, startLine)
-    } catch (err) {
-      log.warn('extractPhpCode', `error parsing '${src.split(/\n/g)[err.loc.line - 1].trim()}' (${filename}:${err.loc.line})`)
-    }
-  }
-
   addMessage ({ filename, line }, id, { plural = null, comment = null, context = null, allowSpaceInId = false } = {}) {
     const poEntry = findPoEntry(this.po, context, id)
     const builder = poEntry ? PoEntryBuilder.fromPoEntry(poEntry) : new PoEntryBuilder(context, id, { allowSpaceInId })
@@ -647,10 +432,6 @@ export class PotExtractor {
     }
 
     setPoEntry(this.po, builder.toPoEntry())
-  }
-
-  getPo () {
-    return this.po
   }
 
   toString () {
@@ -684,37 +465,6 @@ function buildKeywordMap (keywords) {
     keywordMap[name] = pos ? Number.parseInt(pos) : 0
   }
   return keywordMap
-}
-
-function findNonSpace (src, index) {
-  const match = /^(\s*)\S/.exec(src.substring(index))
-  if (match) {
-    return index + match[1].length
-  } else {
-    return index
-  }
-}
-
-function getCocosNodePath (nodes, obj) {
-  if (obj.hasOwnProperty('node')) {
-    const node = nodes[obj.node.__id__]
-    return getCocosNodePath(nodes, node)
-  } else if (obj.hasOwnProperty('_parent')) {
-    if (obj._parent) {
-      const parent = nodes[obj._parent.__id__]
-      const name = obj._name
-      const path = getCocosNodePath(nodes, parent)
-      if (path) {
-        return path + '.' + name
-      } else {
-        return name
-      }
-    } else {
-      return ''
-    }
-  } else {
-    throw new Error(`unknown cocos object: ${JSON.stringify(obj)}`)
-  }
 }
 
 export function getLineTo (src, index, startLine = 1) {

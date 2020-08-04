@@ -5,18 +5,15 @@ import { parseVueFiles } from './vue-files.js'
 import { parseLanguageFiles, writeMissingToLanguage } from './language-files.js'
 import { extractI18NReport } from './report.js'
 
-export function createI18NReport (vueFiles, languageFiles) {
-  const resolvedVueFiles = path.resolve(process.cwd(), vueFiles)
-  const resolvedLanguageFiles = path.resolve(process.cwd(), languageFiles)
+export async function reportCommand ({ vueFolder, languageFolder, languageFormat, languageList, shouldAddMissingKeys = true }) {
+  languageFolder = path.resolve(process.cwd(), languageFolder)
+  const vueFilesPath = `${path.resolve(process.cwd(), vueFolder)}/**/*.?(js|vue)`
+  languageList = languageList.split(',').map(elm => elm.trim()).filter(Boolean)
 
-  const parsedVueFiles = parseVueFiles(resolvedVueFiles)
-  const parsedLanguageFiles = parseLanguageFiles(resolvedLanguageFiles)
+  const codeItems = parseVueFiles(vueFilesPath)
+  const parsedLanguages = parseLanguageFiles(languageFolder, languageList, languageFormat)
 
-  return extractI18NReport(parsedVueFiles, parsedLanguageFiles)
-}
-
-export async function reportCommand ({ vueFiles, languageFiles, shouldAdd = true }) {
-  const report = createI18NReport(vueFiles, languageFiles)
+  const report = extractI18NReport(codeItems, parsedLanguages)
 
   if (report.missingKeys) {
     if (report.missingKeys.length) {
@@ -36,9 +33,8 @@ export async function reportCommand ({ vueFiles, languageFiles, shouldAdd = true
   }
 
   const newMissingKeys = report.missingKeys.filter(key => key.isNew)
-  if (shouldAdd && newMissingKeys.length > 0) {
-    const resolvedLanguageFiles = path.resolve(process.cwd(), languageFiles)
-    writeMissingToLanguage(resolvedLanguageFiles, newMissingKeys)
+  if (shouldAddMissingKeys && newMissingKeys.length > 0) {
+    writeMissingToLanguage(languageFolder, languageFormat, languageList, newMissingKeys)
     console.log(chalk.magenta(`${newMissingKeys.length} missing keys have been added to your languages files`))
   }
 }

@@ -9,7 +9,10 @@
 - Add missing keys to language files
 
 ## Example
-`vue-i18n-scanner -v '**/*.?(js|vue)' -l 'locales/*.json'`
+`npx vue-i18n-scanner -v 'src' -l 'locales' -f json -L 'en,es'`
+
+## Configuration
+`vue-i18n-scanner` is highly opinionated, and doesn't offer configuration besides the CLI options. Run `npx vue-i18n-scanner report --help` to learn more
 
 ## License
 

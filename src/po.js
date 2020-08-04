@@ -1,7 +1,6 @@
 // Modified from https://github.com/vonvonme/l10n-tools/blob/release/po.js
 /* eslint-disable no-prototype-builtins */
 
-import fs from 'fs'
 import * as gettextParser from 'gettext-parser'
 import { sortSet } from './utils'
 
@@ -102,27 +101,6 @@ export class PoEntryBuilder {
   }
 }
 
-export function setPoEntryFlag (poEntry, flag) {
-  if (!poEntry.hasOwnProperty('comments')) {
-    poEntry.comments = {}
-  }
-  poEntry.comments.flag = flag
-}
-
-export function removePoEntryFlag (poEntry) {
-  if (!poEntry.hasOwnProperty('comments')) {
-    return
-  }
-  delete poEntry.comments.flag
-}
-
-export function getPoEntryFlag (poEntry) {
-  if (!poEntry.hasOwnProperty('comments')) {
-    return null
-  }
-  return poEntry.comments.flag || null
-}
-
 export function findPoEntry (po, msgctxt, msgid) {
   if (msgctxt == null) {
     msgctxt = ''
@@ -160,16 +138,6 @@ export function setPoEntry (po, poEntry) {
   po.translations[msgctxt][poEntry.msgid] = poEntry
 }
 
-export function readPoFile (poPath) {
-  const poInput = fs.readFileSync(poPath)
-  return gettextParser.po.parse(poInput, 'UTF-8')
-}
-
-export function writePoFile (poPath, po) {
-  const output = gettextParser.po.compile(po)
-  fs.writeFileSync(poPath, output)
-}
-
 export function * getPoEntries (po) {
   for (const [msgctxt, poEntries] of Object.entries(po.translations)) {
     for (const [msgid, poEntry] of Object.entries(poEntries)) {
@@ -181,66 +149,6 @@ export function * getPoEntries (po) {
   }
 }
 
-export function * getPoEntriesFromFile (poPath) {
-  yield * getPoEntries(readPoFile(poPath))
-}
-
 export function * getPoEntriesFromString (poInput) {
   yield * getPoEntries(gettextParser.po.parse(poInput, 'UTF-8'))
-}
-
-export function checkPoEntrySpecs (poEntry, specs) {
-  return specs.every(spec => {
-    const positive = !spec.startsWith('!')
-    if (!positive) {
-      spec = spec.substr(1)
-    }
-
-    if (spec === 'total') {
-      return positive
-    } else if (spec === 'untranslated') {
-      if (!poEntry.msgstr[0]) {
-        return positive
-      } else {
-        return !positive
-      }
-    } else if (spec === 'translated') {
-      if (poEntry.msgstr[0]) {
-        return positive
-      } else {
-        return !positive
-      }
-    } else {
-      if (spec === getPoEntryFlag(poEntry)) {
-        return positive
-      } else {
-        return !positive
-      }
-    }
-  })
-}
-
-export function exportPoToJson (poPath, { keySeparator = '.' } = {}) {
-  const json = {}
-  const po = readPoFile(poPath)
-  for (const poEntry of getPoEntries(po)) {
-    if (poEntry.msgctxt) {
-      throw new Error('[exportPoToJson] po entry with msgctxt not supported yet')
-    }
-
-    if (poEntry.msgid && poEntry.msgstr[0]) {
-      const keys = keySeparator ? poEntry.msgid.split(keySeparator) : [poEntry.msgid]
-      const lastKey = keys.pop()
-
-      let obj = json
-      for (const key of keys) {
-        if (!obj.hasOwnProperty(key)) {
-          obj[key] = {}
-        }
-        obj = obj[key]
-      }
-      obj[lastKey] = poEntry.msgstr[0]
-    }
-  }
-  return json
 }

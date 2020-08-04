@@ -1,12 +1,12 @@
 import { MISSING_TRANSLATION_VALUE } from './utils.js'
 
-export function extractI18NReport (parsedVueFiles, parsedLanguageFiles) {
+export function extractI18NReport (codeItems, parsedLanguages) {
   const missingKeys = []
   const unusedKeys = []
 
-  Object.entries(parsedLanguageFiles).forEach(([language, languageItems]) => {
+  Object.entries(parsedLanguages).forEach(([language, languageItems]) => {
     // Find Missing keys
-    parsedVueFiles.forEach(vueItem => {
+    codeItems.forEach(vueItem => {
       const langItem = languageItems.find(langItem => langItem.path === vueItem.path)
       const langValue = langItem ? langItem.value : undefined
 
@@ -21,7 +21,7 @@ export function extractI18NReport (parsedVueFiles, parsedLanguageFiles) {
 
     // Find Unused keys
     languageItems
-      .filter(langItem => parsedVueFiles.every(vueItem => vueItem.path !== langItem.path))
+      .filter(langItem => codeItems.every(vueItem => vueItem.path !== langItem.path))
       .forEach(langItem => {
         unusedKeys.push({ ...langItem, language })
       })
