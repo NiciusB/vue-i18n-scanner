@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "description": "Manage vue-i18n localization with static analysis",
   "scripts": {
-    "test": "node bin/index.js -v 'test' -l 'test' -f json -L 'en,es'"
+    "test": "node bin/index.js -v 'test/src' -l 'test/lang' -f json -L 'en,es'"
   },
   "license": "MIT",
   "source": "src/index.js",

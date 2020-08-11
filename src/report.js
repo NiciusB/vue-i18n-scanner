@@ -1,4 +1,4 @@
-import { MISSING_TRANSLATION_VALUE } from './utils.js'
+import { MISSING_TRANSLATION_VALUE } from './utils'
 
 export function extractI18NReport (codeItems, parsedLanguages) {
   const missingKeys = []

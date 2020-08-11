@@ -6,6 +6,11 @@ import path from 'path'
 import { PotExtractor } from './pot-extractor'
 import { getPoEntriesFromString } from './po'
 
+export function parseVueFiles (vueFilesPath) {
+  const filesList = readVueFiles(vueFilesPath)
+  return extractI18nItemsFromVueFiles(filesList)
+}
+
 function readVueFiles (src) {
   if (!isValidGlob(src)) {
     throw new Error(`vueFiles isn't a valid glob pattern (${chalk.yellow(src)})`)
@@ -56,18 +61,17 @@ function extractI18nItemsFromVueFiles (sourceFiles) {
     }
   }
 
-  const entries = [...getPoEntriesFromString(extractor.toString())]
-
-  return entries.map(entry => {
+  const entries = [...getPoEntriesFromString(extractor.toString())].map(entry => {
     const path = entry.msgid
     const reference = entry.comments.reference.split('\n')[0]
-    const file = reference.split(':')[0]
-    const line = parseInt(reference.split(':')[1])
+
+    const lastDoubleDotIndex = reference.lastIndexOf(':')
+    if (lastDoubleDotIndex === -1) throw new Error(`Invalid PO entry ${reference}`)
+
+    const file = reference.slice(0, lastDoubleDotIndex)
+    const line = parseInt(reference.slice(lastDoubleDotIndex + 1))
     return { path, line, file }
   })
-}
 
-export function parseVueFiles (vueFilesPath) {
-  const filesList = readVueFiles(vueFilesPath)
-  return extractI18nItemsFromVueFiles(filesList)
+  return entries
 }
