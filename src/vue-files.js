@@ -17,7 +17,8 @@ function readVueFiles (src) {
   }
 
   const targetFiles = glob.sync(src, {
-    ignore: ['**/node_modules/**/*.*']
+    ignore: ['**/node_modules/**/*.*'],
+    nodir: true
   })
 
   if (targetFiles.length === 0) {
