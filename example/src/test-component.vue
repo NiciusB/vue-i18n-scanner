@@ -22,5 +22,14 @@
                     { data: this.$t('hello') }
                 )
         }}
+    <button
+      v-for="(value, key) in {
+        'key1': $t('test.insideObject'),
+        'key2': $t('test.insideObject')
+      }"
+      :key="key"
+    >
+    {{ key }}: {{ name }}
+    </button>
   </div>
 </template>
