@@ -1,35 +1,27 @@
 <template>
   <div>
-        {{ $t('test0') }}
-        {{ $t( 'test1' ) }}
-        {{ $t("test2") }}
-        {{ $t(`test3.test`) }}
-        {{ $t('test4()') }}
-        {{ $t('test5""`') }}
-        {{ $t(1 ? 'test6' : 'test7') }}
-        {{ $t('test8.'+'1') }}
-        {{ $t('test9.'+ (1 ? '1' : '2')) }}
-        {{ $t("test10", { num: 10 }) }}
-        {{ $t(  (((((((((('test11')))))))))) ) }}
-        {{ $t(  
-            'test12'
-            )
-        }}
-        {{
-            $tc(
-                    'test12',
-                    channels.length,
-                    { data: this.$t('hello') }
-                )
-        }}
+    <!-- These work -->
+    {{ $t('Hello world!') }}
+    
+    {{ $t(1 ? 'ternaries work' : 'yay') }}
+    
+    {{ $t('this' + 'also' + 'works') }}
+
+    {{ $t("interpolation {num} ftw", { num: 10 }) }}
+
     <button
       v-for="(value, key) in {
-        'key1': $t('test.insideObject'),
-        'key2': $t('test.insideObject')
+        'key1': $t('test.insideDirective')
       }"
       :key="key"
     >
     {{ key }}: {{ name }}
     </button>
+
+
+    <!-- These don't -->
+    {{ $t(aVariableDoesNotWork) }}
+
+    {{ $t(`literal with variable does not work: ${someVariable}`) }}
   </div>
 </template>

@@ -1,4 +1,8 @@
 <h1 align="center">vue-i18n-scanner</h1>
+
+<p align="center">Translation string analyzer that reports missing and unused keys</p>
+
+<img src="./preview.png" width=800 />
                                                                                        
 ---
 
@@ -8,7 +12,12 @@
 - Report unused keys in the language files.
 - Add missing keys to language files
 
+It is built to support both .js and .vue files, and tested and on active use on large codebases
+
 ## Example
+
+Check the example by running `npm run example`. You can base your package.json `i18n` script on that one, or run it directly like: 
+
 `npx vue-i18n-scanner -v 'src' -l 'locales' -f json -L 'en,es'`
 
 ## Configuration
