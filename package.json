@@ -3,7 +3,8 @@
   "version": "1.0.3",
   "description": "Manage vue-i18n localization with static analysis",
   "scripts": {
-    "test": "node bin/index.js -v 'example/src' -l 'example/lang' -f json -L 'en,es'"
+    "example": "node bin/index.js -v 'example/src' -l 'example/lang' -f json -L 'en,es'",
+    "test": "jest"
   },
   "license": "MIT",
   "source": "src/index.js",
@@ -38,11 +39,16 @@
     "npmlog": "^4.1.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "@types/jest": "^26.0.19",
+    "babel-jest": "^26.6.3",
     "eslint": "^7.6.0",
     "eslint-config-standard": "^14.1.1",
     "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-standard": "^4.0.1"
+    "eslint-plugin-standard": "^4.0.1",
+    "jest": "^26.6.3"
   }
 }

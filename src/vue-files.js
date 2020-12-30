@@ -11,7 +11,7 @@ export function parseVueFiles (vueFilesPath) {
   return extractI18nItemsFromVueFiles(filesList)
 }
 
-function readVueFiles (src) {
+export function readVueFiles (src) {
   if (!isValidGlob(src)) {
     throw new Error(`vueFiles isn't a valid glob pattern (${chalk.yellow(src)})`)
   }
@@ -32,7 +32,7 @@ function readVueFiles (src) {
   })
 }
 
-function extractI18nItemsFromVueFiles (sourceFiles) {
+export function extractI18nItemsFromVueFiles (sourceFiles) {
   const keywords = new Set()
   keywords.add('$t')
   keywords.add('vm.$t')
@@ -46,7 +46,7 @@ function extractI18nItemsFromVueFiles (sourceFiles) {
   const extractor = PotExtractor.create('domainName', {
     tagNames: ['i18n'],
     objectAttrs: { 'v-t': ['', 'path'] },
-    exprAttrs: [/^:/, /^v-bind:/, /^v-html$/],
+    exprAttrs: [/^:/, /^v-/],
     markers: [{ start: '{{', end: '}}' }],
     keywords: keywords
   })
