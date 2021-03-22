@@ -1,6 +1,6 @@
 {
   "name": "vue-i18n-scanner",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Manage vue-i18n localization with static analysis",
   "scripts": {
     "example": "node bin/index.js -v 'example/src' -l 'example/lang' -f json -L 'en,es'",

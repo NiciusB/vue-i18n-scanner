@@ -42,6 +42,8 @@ export function extractI18nItemsFromVueFiles (sourceFiles) {
   keywords.add('vm.$tc')
   keywords.add('this.$tc')
   keywords.add('app.i18n.tc')
+  keywords.add('i18n.t')
+  keywords.add('i18n.tc')
 
   const extractor = PotExtractor.create('domainName', {
     tagNames: ['i18n'],
